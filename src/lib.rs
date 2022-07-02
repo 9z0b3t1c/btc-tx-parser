@@ -1,29 +1,180 @@
-use hex::FromHex;
-use std::io::Read;
+use sha2::{Digest, Sha256};
+
+#[derive(Debug)]
+pub struct BtcTxParser {
+    tx_hex: String,
+    index: usize,
+}
 
 #[derive(Default, Debug)]
-pub struct BtcTxParser {
+pub struct BtcTx {
+    pub version_number: u64,
     pub txid: String,
-    pub version_number: u32,
+    pub inputs: Vec<Input>,
+    pub outputs: Vec<Output>,
+    pub locktime: u64,
+}
+
+#[derive(Debug)]
+pub struct Input {
+    pub txid: String,
+    pub vout: u64,
+    pub script_sig: String,
+    pub sequence: u64,
+}
+
+#[derive(Debug)]
+pub struct Output {
+    pub amount: u64,
+    pub script_pub_key: String,
 }
 
 impl BtcTxParser {
-    pub fn new(raw_hex: &str) -> BtcTxParser {
-        let mut btp = BtcTxParser {
+    pub fn parse(raw_tx_hex: String) -> BtcTx {
+        let mut parser = BtcTxParser {
+            tx_hex: raw_tx_hex,
+            index: 0,
+        };
+        let mut btc_tx = BtcTx {
+            txid: parser.txid(),
+            version_number: parser.version_number(),
             ..Default::default()
         };
-        let bytes = Vec::<u8>::from_hex(raw_hex).unwrap();
-        let bytes_slice = &bytes[..];
-        let vn = version_number(bytes_slice);
-        println!("version number: {}", vn);
-        btp.version_number = vn;
-        return btp;
-    }
-}
 
-// 4-bytes; little endian
-fn version_number(mut bytes: &[u8]) -> u32 {
-    let mut buffer = [0; 4];
-    bytes.read(&mut buffer).ok();
-    u32::from_le_bytes(buffer)
+
+        let input_count = parser.input_count();
+        let mut inputs: Vec<Input> = vec![];
+        for _ in 0..input_count {
+            inputs.push(Input {
+                txid: parser.input_txid(),
+                vout: parser.vout(),
+                script_sig: parser.script_sig(),
+                sequence: parser.sequence(),
+            });
+        }
+
+        let output_count = parser.output_count();
+        let mut outputs: Vec<Output> = vec![];
+        for _ in 0..output_count {
+            outputs.push(Output {
+                amount: parser.amount(),
+                script_pub_key: parser.script_pub_key(),
+            });
+        }
+
+        btc_tx.inputs = inputs;
+        btc_tx.outputs = outputs;
+        btc_tx.locktime = parser.locktime();
+        btc_tx
+    }
+
+    fn txid(&mut self) -> String {
+        let hash = Sha256::digest(Sha256::digest(hex::decode(&self.tx_hex).unwrap()));
+        println!("hash {:?}", hash);
+        let txid = BtcTxParser::convert_endian(&hex::encode(hash));
+        println!("txid {:?}", txid);
+        txid
+    }
+
+    fn version_number(&mut self) -> u64 {
+        let b = self.get_bytes(4, true);
+        BtcTxParser::bytes_to_u64(&b)
+    }
+
+    //TODO this has to handle variable length inputs
+    fn input_count(&mut self) -> u8 {
+        self.get_bytes(1, false)[0]
+    }
+
+    fn output_count(&mut self) -> u8 {
+        self.get_bytes(1, false)[0]
+    }
+
+    fn input_txid(&mut self) -> String {
+        let b = self.get_bytes(32, true);
+        hex::encode(b)
+    }
+
+    fn vout(&mut self) -> u64 {
+        let b = self.get_bytes(4, true);
+        BtcTxParser::bytes_to_u64(&b)
+    }
+
+    fn script_sig(&mut self) -> String {
+        let script_sig_len = self.get_varint() as usize;
+        hex::encode(self.get_bytes(script_sig_len, false))
+    }
+
+    fn sequence(&mut self) -> u64 {
+        let b = self.get_bytes(4, true);
+        BtcTxParser::bytes_to_u64(&b)
+    }
+
+    fn amount(&mut self) -> u64 {
+        let b = self.get_bytes(8, true);
+        BtcTxParser::bytes_to_u64(&b)
+    }
+
+    fn script_pub_key(&mut self) -> String {
+        let script_pub_key_size = self.get_varint() as usize;
+        hex::encode(self.get_bytes(script_pub_key_size, false))
+    }
+
+    fn locktime(&mut self) -> u64 {
+        let b = self.get_bytes(4, true);
+        BtcTxParser::bytes_to_u64(&b)
+    }
+
+    fn get_bytes(&mut self, n: usize, convert_endian: bool) -> Vec<u8> {
+        let (start, end) = (self.index, self.index + n * 2);
+        self.index += n * 2;
+        let mut string = self.tx_hex[start..end].to_string();
+        if convert_endian {
+            string = BtcTxParser::convert_endian(&string)
+        }
+        hex::decode(string).unwrap()
+    }
+
+    pub fn convert_endian(string: &str) -> String {
+        let mut new_string = String::new();
+        let mut prev_char = ' ';
+        for (i, curr_char) in string.chars().rev().enumerate() {
+            if i % 2 == 0 {
+                prev_char = curr_char;
+                continue;
+            }
+            new_string.push(curr_char);
+            new_string.push(prev_char);
+        }
+        return new_string;
+    }
+
+    pub fn bytes_to_u64(byte_vector: &Vec<u8>) -> u64 {
+        if byte_vector.len() > 8 {
+            panic!("Input exceeds u64 size")
+        }
+        let mut varint = 0;
+        for byte in byte_vector {
+            varint <<= 8;
+            varint |= *byte as u64;
+        }
+        return varint;
+    }
+
+    pub fn get_varint(&mut self) -> u64 {
+        let integer = self.get_bytes(1, false)[0];
+        let i = u8::MAX - integer;
+        if i > 2 {
+            return integer as u64;
+        }
+        let bytes = if i == 0 {
+            8
+        } else if i == 1 {
+            4
+        } else {
+            2
+        };
+        let byte_vector = self.get_bytes(bytes, true);
+        return BtcTxParser::bytes_to_u64(&byte_vector);
+    }
 }
