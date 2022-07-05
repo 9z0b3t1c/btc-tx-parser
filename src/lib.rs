@@ -15,7 +15,7 @@ pub struct BtcTx {
     pub locktime: u64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Input {
     pub txid: String,
     pub vout: u64,
@@ -23,7 +23,7 @@ pub struct Input {
     pub sequence: u64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Output {
     pub amount: u64,
     pub script_pub_key: String,
@@ -40,7 +40,6 @@ impl BtcTxParser {
             version_number: parser.version_number(),
             ..Default::default()
         };
-
 
         let input_count = parser.input_count();
         let mut inputs: Vec<Input> = vec![];
@@ -70,9 +69,7 @@ impl BtcTxParser {
 
     fn txid(&mut self) -> String {
         let hash = Sha256::digest(Sha256::digest(hex::decode(&self.tx_hex).unwrap()));
-        println!("hash {:?}", hash);
         let txid = BtcTxParser::convert_endian(&hex::encode(hash));
-        println!("txid {:?}", txid);
         txid
     }
 
