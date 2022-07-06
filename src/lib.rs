@@ -1,7 +1,6 @@
 use sha2::{Digest, Sha256};
-#[path = "./transaction.rs"]
 mod transaction;
-mod util;
+pub mod util;
 pub use crate::transaction::BtcTx;
 pub use crate::transaction::Input;
 pub use crate::transaction::Output;
@@ -56,16 +55,18 @@ impl BtcTxParser {
         txid
     }
 
+    //le
     fn version_number(&mut self) -> u64 {
         let b = self.get_bytes(4, true);
         util::bytes_to_u64(&b)
     }
 
-    //TODO this has to handle variable length inputs
+    //TODO this has to handle variable length inputs - the 'compact size' shenanigans
     fn input_count(&mut self) -> u8 {
         self.get_bytes(1, false)[0]
     }
 
+    //TODO this has to handle variable length inputs - the 'compact size' shenanigans
     fn output_count(&mut self) -> u8 {
         self.get_bytes(1, false)[0]
     }
@@ -75,11 +76,13 @@ impl BtcTxParser {
         hex::encode(b)
     }
 
+    //le
     fn vout(&mut self) -> u64 {
         let b = self.get_bytes(4, true);
         util::bytes_to_u64(&b)
     }
 
+    //TODO figure out the correct compact size behaviour
     fn script_sig(&mut self) -> String {
         let script_sig_len = self.get_varint() as usize;
         hex::encode(self.get_bytes(script_sig_len, false))
@@ -105,6 +108,10 @@ impl BtcTxParser {
         util::bytes_to_u64(&b)
     }
 
+    // Gets 'n' bytes as a string
+    // Flips the string if endianness requires
+    // Advances the index
+    // Transforms the string into a vec of hex
     fn get_bytes(&mut self, n: usize, convert_endian: bool) -> Vec<u8> {
         let (start, end) = (self.index, self.index + n * 2);
         self.index += n * 2;

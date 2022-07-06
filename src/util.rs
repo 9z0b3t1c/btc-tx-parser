@@ -12,12 +12,12 @@ pub fn convert_endian(string: &str) -> String {
     return new_string;
 }
 
-pub fn bytes_to_u64(byte_vector: &Vec<u8>) -> u64 {
-    if byte_vector.len() > 8 {
+pub fn bytes_to_u64(bytes: &Vec<u8>) -> u64 {
+    if bytes.len() > 8 {
         panic!("Input exceeds u64 size")
     }
     let mut varint = 0;
-    for byte in byte_vector {
+    for byte in bytes {
         varint <<= 8;
         varint |= *byte as u64;
     }

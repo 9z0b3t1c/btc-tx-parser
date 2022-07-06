@@ -1,17 +1,19 @@
-
-# Parsing a bitcoin transaction
+## Parsing a bitcoin transaction
 Using the bitcoin-cli, you can do getrawtransaction <transactionid>
 This will return a string of hex which conforms to a subtle and arcane
 schema. From this string can be parsed the following information about
 the transaction.
+This code parses legacy transactions into a struct.
 
+### Notes
 1. If you hash the raw text, twice, (using sha256) you can get back to the origianl
    transaction id you passed in.
 2. The first 4 bytes are the version number.
 3. The next 'n' bytes determine how many inputs the transaction has.
-   TOOD explain exactly how to determine the value of 'n'.
+   TOOD explain exactly how to determine the value of 'n' - this is the
+"compact size", which is also used to determine the number of outputs,
+and the ScriptSig
 4. With the number of inputs, set up an array of inputs, and read off the txid, vout, script_sig and sequence.
-   The script_sig requires you to do another 'find how many bytes to handle' dance.
 5. Then you do a similar thing for outputs.
 
 note: borrowing some code from
