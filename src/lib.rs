@@ -1,32 +1,14 @@
 use sha2::{Digest, Sha256};
+#[path = "./transaction.rs"]
+mod transaction;
+pub use crate::transaction::BtcTx;
+pub use crate::transaction::Input;
+pub use crate::transaction::Output;
 
 #[derive(Debug)]
 pub struct BtcTxParser {
     tx_hex: String,
     index: usize,
-}
-
-#[derive(Default, Debug)]
-pub struct BtcTx {
-    pub version_number: u64,
-    pub txid: String,
-    pub inputs: Vec<Input>,
-    pub outputs: Vec<Output>,
-    pub locktime: u64,
-}
-
-#[derive(Debug, Clone)]
-pub struct Input {
-    pub txid: String,
-    pub vout: u64,
-    pub script_sig: String,
-    pub sequence: u64,
-}
-
-#[derive(Debug, Clone)]
-pub struct Output {
-    pub amount: u64,
-    pub script_pub_key: String,
 }
 
 impl BtcTxParser {

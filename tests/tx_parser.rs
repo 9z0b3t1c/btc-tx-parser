@@ -1,8 +1,9 @@
+use std::collections::HashMap;
+
 use btc_tx_parser::BtcTx;
 use btc_tx_parser::BtcTxParser;
 use btc_tx_parser::Input;
 use btc_tx_parser::Output;
-use std::collections::HashMap;
 
 //https://blockstream.info/tx/b5c8d30d5bae5b0abc44ee38816dc8c6bcb7de63ecfda3ba6099d30b4e650f46
 fn random_transaction() -> BtcTx {
