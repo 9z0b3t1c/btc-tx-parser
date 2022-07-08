@@ -1,9 +1,14 @@
-## Parsing a bitcoin transaction
-Using the bitcoin-cli, you can do getrawtransaction <transactionid>
-This will return a string of hex which conforms to a subtle and arcane
-schema. From this string can be parsed the following information about
-the transaction.
-This code parses legacy transactions into a struct.
+## Bitcoin transaction parser
+This is a learning project, with the Base58 course.
+It requires a bitcoin full node, with the connection parameters set as
+environment variables.
+
+### Parsing a bitcoin transaction
+This code parses the hex returned by
+```
+  bitcoin-cli getrawtransaction <transactionid>
+```
+...which conforms to a subtle and arcane schema.
 
 ### Notes
 1. If you hash the raw text, twice, (using sha256) you can get back to the origianl
@@ -15,9 +20,6 @@ This code parses legacy transactions into a struct.
 and the ScriptSig
 4. With the number of inputs, set up an array of inputs, and read off the txid, vout, script_sig and sequence.
 5. Then you do a similar thing for outputs.
+6. This code so far only works with 'simple' transactions, not segwit
+7. Borrowed code from https://github.com/fiatjaf/bitcoin-transaction-hex-decoder for byte manipulation and endian conversion
 
-note: borrowing some code from
-https://github.com/fiatjaf/bitcoin-transaction-hex-decoder with the
-intent of learning how to parse a btc transaction.
-
-note: this code so far only works with 'simple' transactions, not segwit

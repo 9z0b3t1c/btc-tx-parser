@@ -5,6 +5,7 @@ pub use crate::transaction::BtcTx;
 pub use crate::transaction::Input;
 pub use crate::transaction::Output;
 
+
 #[derive(Debug)]
 pub struct BtcTxParser {
     tx_hex: String,
@@ -49,6 +50,7 @@ impl BtcTxParser {
         btc_tx
     }
 
+    //le
     fn txid(&mut self) -> String {
         let hash = Sha256::digest(Sha256::digest(hex::decode(&self.tx_hex).unwrap()));
         let txid = util::convert_endian(&hex::encode(hash));
