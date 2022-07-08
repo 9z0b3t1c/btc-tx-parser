@@ -14,10 +14,9 @@ pub struct BtcTx {
     pub outputs: Vec<Output>,
     pub locktime: u64, // 4 byte le
     pub transaction_fee: u64,
+    pub size: usize,
+    pub weight: usize,
     //TODO derive the following fields:
-    //size
-    //vsize
-    //weight
     //blockhash
     //confirmations
     //time
@@ -46,7 +45,7 @@ impl BtcTx {
         for i in &self.inputs {
             let it = Txid::from_hex(&i.txid).unwrap();
             let ir = util::client().get_raw_transaction_hex(&it, None).unwrap();
-            let ip = BtcTxParser::parse(ir);
+            let ip = BtcTxParser::parse(&ir);
             let relevant_amount = ip.outputs[i.vout as usize].amount;
             input_sum += relevant_amount;
         }

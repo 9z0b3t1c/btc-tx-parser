@@ -13,9 +13,9 @@ pub struct BtcTxParser {
 }
 
 impl BtcTxParser {
-    pub fn parse(raw_tx_hex: String) -> BtcTx {
+    pub fn parse(raw_tx_hex: &String) -> BtcTx {
         let mut parser = BtcTxParser {
-            tx_hex: raw_tx_hex,
+            tx_hex: raw_tx_hex.to_string(),
             index: 0,
         };
         let mut btc_tx = BtcTx {
@@ -47,6 +47,8 @@ impl BtcTxParser {
         btc_tx.inputs = inputs;
         btc_tx.outputs = outputs;
         btc_tx.locktime = parser.locktime();
+        btc_tx.size = hex::decode(&raw_tx_hex).unwrap().len();
+        btc_tx.weight = btc_tx.size * 4;
         btc_tx
     }
 
