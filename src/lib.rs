@@ -1,10 +1,10 @@
+use std::collections::HashMap;
 use sha2::{Digest, Sha256};
 mod transaction;
 pub mod util;
 pub use crate::transaction::BtcTx;
 pub use crate::transaction::Input;
 pub use crate::transaction::Output;
-
 
 #[derive(Debug)]
 pub struct BtcTxParser {
@@ -48,7 +48,8 @@ impl BtcTxParser {
         btc_tx.outputs = outputs;
         btc_tx.locktime = parser.locktime();
         btc_tx.size = hex::decode(&raw_tx_hex).unwrap().len();
-        btc_tx.weight = btc_tx.size * 4;
+        btc_tx.vsize = btc_tx.size; // TODO segwit
+        btc_tx.weight = btc_tx.size * 4; // TODO segwit
         btc_tx
     }
 
@@ -89,6 +90,7 @@ impl BtcTxParser {
     //TODO figure out the correct compact size behaviour
     fn script_sig(&mut self) -> String {
         let script_sig_len = self.get_varint() as usize;
+        println!("script sig size {}", script_sig_len);
         hex::encode(self.get_bytes(script_sig_len, false))
     }
 
@@ -126,20 +128,35 @@ impl BtcTxParser {
         hex::decode(string).unwrap()
     }
 
+    // varint in the btc protocol is a variable length field, which indicates the
+    // length of the next field in the transaction hex.
+    // If the first byte of the varint is < 253, that's all you need to look at
+    // If it is 253, you need to grab the next 2 bytes
+    // If it is 254, you need to grab the next 4 bytes
+    // If it is 255, you need to grab the next 8 bytes
     fn get_varint(&mut self) -> u64 {
-        let integer = self.get_bytes(1, false)[0];
-        let i = u8::MAX - integer;
-        if i > 2 {
-            return integer as u64;
+        let first_byte = self.get_bytes(1, false)[0];
+        match first_byte {
+            255 => util::bytes_to_u64(&self.get_bytes(8, true)),
+            254 => util::bytes_to_u64(&self.get_bytes(4, true)),
+            253 => util::bytes_to_u64(&self.get_bytes(2, true)),
+            _   => first_byte as u64,
         }
-        let bytes = if i == 0 {
-            8
-        } else if i == 1 {
-            4
-        } else {
-            2
-        };
-        let byte_vector = self.get_bytes(bytes, true);
-        util::bytes_to_u64(&byte_vector)
     }
 }
+
+fn test_varint() {
+    let mut test_cases = HashMap::new();
+    test_cases.insert("08".to_string(), "08");
+    test_cases.insert("fc".to_string(), "fc");
+    test_cases.insert("fd1234".to_string(), "3412");
+    test_cases.insert("fe12345678".to_string(), "78563412");
+    test_cases.insert("ff1234567890abcdef".to_string(), "efcdab9078563412");
+
+    for (bytes, expected) in &test_cases {
+        let mut btp = BtcTxParser { tx_hex: bytes.to_string(), index: 0, };
+        let expected = util::bytes_to_u64(&hex::decode(expected).unwrap());
+        assert_eq!(btp.get_varint(), expected);
+    }
+}
+
