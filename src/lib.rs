@@ -53,7 +53,7 @@ impl BtcTxParser {
         btc_tx
     }
 
-    //le
+    //The 'short' txid is a double sha256 of the raw transaction hex, in little endian
     fn txid(&mut self) -> String {
         let hash = Sha256::digest(Sha256::digest(hex::decode(&self.tx_hex).unwrap()));
         let txid = util::convert_endian(&hex::encode(hash));
@@ -66,14 +66,12 @@ impl BtcTxParser {
         util::bytes_to_u64(&b)
     }
 
-    //TODO this has to handle variable length inputs - the 'compact size' shenanigans
-    fn input_count(&mut self) -> u8 {
-        self.get_bytes(1, false)[0]
+    fn input_count(&mut self) -> u64 {
+        self.get_varint()
     }
 
-    //TODO this has to handle variable length inputs - the 'compact size' shenanigans
-    fn output_count(&mut self) -> u8 {
-        self.get_bytes(1, false)[0]
+    fn output_count(&mut self) -> u64 {
+        self.get_varint()
     }
 
     fn input_txid(&mut self) -> String {
@@ -87,10 +85,8 @@ impl BtcTxParser {
         util::bytes_to_u64(&b)
     }
 
-    //TODO figure out the correct compact size behaviour
     fn script_sig(&mut self) -> String {
         let script_sig_len = self.get_varint() as usize;
-        println!("script sig size {}", script_sig_len);
         hex::encode(self.get_bytes(script_sig_len, false))
     }
 
@@ -131,9 +127,9 @@ impl BtcTxParser {
     // varint in the btc protocol is a variable length field, which indicates the
     // length of the next field in the transaction hex.
     // If the first byte of the varint is < 253, that's all you need to look at
-    // If it is 253, you need to grab the next 2 bytes
-    // If it is 254, you need to grab the next 4 bytes
-    // If it is 255, you need to grab the next 8 bytes
+    // If it is 253 (fd), you need to grab the next 2 bytes
+    // If it is 254 (fe), you need to grab the next 4 bytes
+    // If it is 255 (ff), you need to grab the next 8 bytes
     fn get_varint(&mut self) -> u64 {
         let first_byte = self.get_bytes(1, false)[0];
         match first_byte {
@@ -145,6 +141,7 @@ impl BtcTxParser {
     }
 }
 
+#[test]
 fn test_varint() {
     let mut test_cases = HashMap::new();
     test_cases.insert("08".to_string(), "08");
