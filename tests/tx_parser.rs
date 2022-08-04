@@ -1,13 +1,12 @@
+use btc_tx_parser::parser;
+use btc_tx_parser::util;
 use btc_tx_parser::BtcTx;
-use btc_tx_parser::BtcTxParser;
 use btc_tx_parser::Input;
 use btc_tx_parser::Output;
-use btc_tx_parser::util;
 
-use bitcoincore_rpc::{bitcoin, RpcApi};
 use bitcoin::hashes::hex::FromHex;
 use bitcoin::Txid;
-
+use bitcoincore_rpc::{bitcoin, RpcApi};
 
 //https://blockstream.info/tx/b5c8d30d5bae5b0abc44ee38816dc8c6bcb7de63ecfda3ba6099d30b4e650f46
 fn random_transaction() -> BtcTx {
@@ -17,6 +16,7 @@ fn random_transaction() -> BtcTx {
         transaction_fee: 17952,
         locktime: 0,
         size: 338,
+        vsize: 338,
         weight: 1352,
         inputs: [
             Input {
@@ -46,6 +46,7 @@ fn first_ever_tx() -> BtcTx {
         transaction_fee: 0,
         locktime: 0,
         size: 275,
+        vsize: 275,
         weight: 1100,
         inputs: [
             Input {
@@ -74,6 +75,7 @@ fn second_ever_tx() -> BtcTx {
         transaction_fee: 0,
         locktime: 0,
         size: 157,
+        vsize: 157,
         weight: 628,
         inputs: [
             Input {
@@ -99,6 +101,7 @@ fn more_secret_transaction() -> BtcTx {
         transaction_fee: 103000,
         locktime: 0,
         size: 653,
+        vsize: 653,
         weight: 2612,
         inputs: [
             Input {
@@ -135,12 +138,12 @@ fn more_secret_transaction() -> BtcTx {
     }
 }
 
-
 #[test]
 fn test_parse_first_ever_transaction() {
-    let t = Txid::from_hex(&"f4184fc596403b9d638783cf57adfe4c75c605f6356fbc91338530e9831e9e16").unwrap();
+    let t = Txid::from_hex(&"f4184fc596403b9d638783cf57adfe4c75c605f6356fbc91338530e9831e9e16")
+        .unwrap();
     let rth = util::client().get_raw_transaction_hex(&t, None).unwrap();
-    let mut r = BtcTxParser::parse(&rth);
+    let mut r = parser::parse(&rth);
     let actual = first_ever_tx();
     assert_eq!(r.version_number, actual.version_number);
     assert_eq!(r.txid, actual.txid);
@@ -164,9 +167,10 @@ fn test_parse_first_ever_transaction() {
 
 #[test]
 fn test_parse_second_ever_transaction() {
-    let t = Txid::from_hex(&"ea44e97271691990157559d0bdd9959e02790c34db6c006d779e82fa5aee708e").unwrap();
+    let t = Txid::from_hex(&"ea44e97271691990157559d0bdd9959e02790c34db6c006d779e82fa5aee708e")
+        .unwrap();
     let rth = util::client().get_raw_transaction_hex(&t, None).unwrap();
-    let mut r = BtcTxParser::parse(&rth);
+    let mut r = parser::parse(&rth);
     let actual = second_ever_tx();
     assert_eq!(r.version_number, actual.version_number);
     assert_eq!(r.txid, actual.txid);
@@ -190,9 +194,10 @@ fn test_parse_second_ever_transaction() {
 
 #[test]
 fn test_parse_more_secret_transaction() {
-    let t = Txid::from_hex(&"92a78def188053081187b847b267f0bfabf28368e9a7a642780ce46a78f551ba").unwrap();
+    let t = Txid::from_hex(&"92a78def188053081187b847b267f0bfabf28368e9a7a642780ce46a78f551ba")
+        .unwrap();
     let rth = util::client().get_raw_transaction_hex(&t, None).unwrap();
-    let mut r = BtcTxParser::parse(&rth);
+    let mut r = parser::parse(&rth);
     let actual = more_secret_transaction();
     assert_eq!(r.version_number, actual.version_number);
     assert_eq!(r.txid, actual.txid);
@@ -216,9 +221,10 @@ fn test_parse_more_secret_transaction() {
 
 #[test]
 fn test_parse_random_class_transaction() {
-    let t = Txid::from_hex(&"b5c8d30d5bae5b0abc44ee38816dc8c6bcb7de63ecfda3ba6099d30b4e650f46").unwrap();
+    let t = Txid::from_hex(&"b5c8d30d5bae5b0abc44ee38816dc8c6bcb7de63ecfda3ba6099d30b4e650f46")
+        .unwrap();
     let rth = util::client().get_raw_transaction_hex(&t, None).unwrap();
-    let mut r = BtcTxParser::parse(&rth);
+    let r = parser::parse(&rth);
     let actual = random_transaction();
     assert_eq!(r.version_number, actual.version_number);
     assert_eq!(r.txid, actual.txid);
