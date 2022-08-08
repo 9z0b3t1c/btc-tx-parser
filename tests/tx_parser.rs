@@ -1,3 +1,4 @@
+use btc_tx_parser::builder;
 use btc_tx_parser::parser;
 use btc_tx_parser::util;
 use btc_tx_parser::BtcTx;
@@ -9,7 +10,7 @@ use bitcoin::Txid;
 use bitcoincore_rpc::{bitcoin, RpcApi};
 
 //https://blockstream.info/tx/b5c8d30d5bae5b0abc44ee38816dc8c6bcb7de63ecfda3ba6099d30b4e650f46
-fn random_transaction() -> BtcTx {
+fn random_tx() -> BtcTx {
     BtcTx {
         version_number: 1,
         txid: "b5c8d30d5bae5b0abc44ee38816dc8c6bcb7de63ecfda3ba6099d30b4e650f46".to_string(),
@@ -68,7 +69,7 @@ fn first_ever_tx() -> BtcTx {
 }
 
 //https://blockstream.info/tx/ea44e97271691990157559d0bdd9959e02790c34db6c006d779e82fa5aee708e
-fn second_ever_tx() -> BtcTx {
+fn second_tx() -> BtcTx {
     BtcTx {
         version_number: 1,
         txid: "ea44e97271691990157559d0bdd9959e02790c34db6c006d779e82fa5aee708e".to_string(),
@@ -94,7 +95,7 @@ fn second_ever_tx() -> BtcTx {
 }
 
 //https://blockstream.info/tx/92a78def188053081187b847b267f0bfabf28368e9a7a642780ce46a78f551ba
-fn more_secret_transaction() -> BtcTx {
+fn more_secret_tx() -> BtcTx {
     BtcTx {
         version_number: 1,
         txid: "92a78def188053081187b847b267f0bfabf28368e9a7a642780ce46a78f551ba".to_string(),
@@ -166,12 +167,12 @@ fn test_parse_first_ever_transaction() {
 }
 
 #[test]
-fn test_parse_second_ever_transaction() {
+fn test_parse_second_tx() {
     let t = Txid::from_hex(&"ea44e97271691990157559d0bdd9959e02790c34db6c006d779e82fa5aee708e")
         .unwrap();
     let rth = util::client().get_raw_transaction_hex(&t, None).unwrap();
     let mut r = parser::parse(&rth);
-    let actual = second_ever_tx();
+    let actual = second_tx();
     assert_eq!(r.version_number, actual.version_number);
     assert_eq!(r.txid, actual.txid);
     assert_eq!(r.locktime, actual.locktime);
@@ -193,12 +194,12 @@ fn test_parse_second_ever_transaction() {
 }
 
 #[test]
-fn test_parse_more_secret_transaction() {
+fn test_parse_more_secret_tx() {
     let t = Txid::from_hex(&"92a78def188053081187b847b267f0bfabf28368e9a7a642780ce46a78f551ba")
         .unwrap();
     let rth = util::client().get_raw_transaction_hex(&t, None).unwrap();
     let mut r = parser::parse(&rth);
-    let actual = more_secret_transaction();
+    let actual = more_secret_tx();
     assert_eq!(r.version_number, actual.version_number);
     assert_eq!(r.txid, actual.txid);
     assert_eq!(r.locktime, actual.locktime);
@@ -225,7 +226,7 @@ fn test_parse_random_class_transaction() {
         .unwrap();
     let rth = util::client().get_raw_transaction_hex(&t, None).unwrap();
     let r = parser::parse(&rth);
-    let actual = random_transaction();
+    let actual = random_tx();
     assert_eq!(r.version_number, actual.version_number);
     assert_eq!(r.txid, actual.txid);
     assert_eq!(r.locktime, actual.locktime);
@@ -245,4 +246,40 @@ fn test_parse_random_class_transaction() {
         assert_eq!(output.amount, actual_output.amount);
         assert_eq!(output.script_pub_key, actual_output.script_pub_key);
     }
+}
+
+#[test]
+fn test_build_first_ever_transaction() {
+    let candidate = first_ever_tx();
+    let r = builder::build(&candidate);
+    let t = Txid::from_hex(&candidate.txid).unwrap();
+    let rth = util::client().get_raw_transaction_hex(&t, None).unwrap();
+    assert_eq!(r, rth);
+}
+
+#[test]
+fn test_build_second_tx() {
+    let candidate = second_tx();
+    let r = builder::build(&candidate);
+    let t = Txid::from_hex(&candidate.txid).unwrap();
+    let rth = util::client().get_raw_transaction_hex(&t, None).unwrap();
+    assert_eq!(r, rth);
+}
+
+#[test]
+fn test_build_random_tx() {
+    let candidate = random_tx();
+    let r = builder::build(&candidate);
+    let t = Txid::from_hex(&candidate.txid).unwrap();
+    let rth = util::client().get_raw_transaction_hex(&t, None).unwrap();
+    assert_eq!(r, rth);
+}
+
+#[test]
+fn test_build_more_secret_tx() {
+    let candidate = more_secret_tx();
+    let r = builder::build(&candidate);
+    let t = Txid::from_hex(&candidate.txid).unwrap();
+    let rth = util::client().get_raw_transaction_hex(&t, None).unwrap();
+    assert_eq!(r, rth);
 }

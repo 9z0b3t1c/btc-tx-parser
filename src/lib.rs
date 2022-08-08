@@ -1,3 +1,4 @@
+pub mod builder;
 pub mod parser;
 mod transaction;
 pub mod util;
